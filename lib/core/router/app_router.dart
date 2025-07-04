@@ -1,4 +1,6 @@
 
+import 'package:flutter_task_skillgenic/features/auth/presentation/views/auth_screen.dart';
+import 'package:flutter_task_skillgenic/features/task/presentation/views/add_todo_screen.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/splash/presentation/views/splash_screen.dart';
 
@@ -10,8 +12,7 @@ import '../../features/onboarding/presentation/views/onboarding_screen.dart';
 import '../../features/auth/presentation/views/login_screen.dart';
 // Home
 import '../../features/home/presentation/views/home_screen.dart';
-// Task
-import '../../features/task/presentation/views/task_screen.dart';
+
 // Calendar
 import '../../features/calendar/presentation/views/calendar_screen.dart';
 // Search
@@ -36,13 +37,18 @@ final GoRouter appRouter = GoRouter(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
     ),
+     GoRoute(
+      path: '/signup',
+      builder: (context, state) => const AuthScreen(),
+    ),
     GoRoute(
       path: '/home',
       builder: (context, state) => const HomeScreen(),
     ),
-    GoRoute(
-      path: '/task',
-      builder: (context, state) => const TaskScreen(),
+ 
+       GoRoute(
+      path: '/add-task',
+      builder: (context, state) => const AddTodoSheet(),
     ),
     GoRoute(
       path: '/calendar',

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "139443522004",
+    "project_id": "taskskillgenic",
+    "storage_bucket": "taskskillgenic.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:139443522004:android:9f44b4ada46579b8fd6e41",
+        "android_client_info": {
+          "package_name": "skillgenic.com"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVJy9D-oRhNhBr2u8CgHyuo6Ab04rNlEQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
