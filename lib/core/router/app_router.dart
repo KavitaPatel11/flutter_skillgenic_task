@@ -1,9 +1,10 @@
+import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_task_skillgenic/features/auth/presentation/views/auth_screen.dart';
-import 'package:flutter_task_skillgenic/features/task/presentation/views/add_todo_screen.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/splash/presentation/views/splash_screen.dart';
-
 
 // Splash
 // Onboarding
@@ -23,7 +24,22 @@ import '../../features/settings/presentation/views/settings_screen.dart';
 import '../../features/notifications/presentation/views/notifications_screen.dart';
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/',
+ initialLocation: '/',
+  refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
+  redirect: (context, state) {
+    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
+    final loggingIn = state.fullPath == '/login' || state.fullPath == '/signup';
+
+    if (!isLoggedIn && !loggingIn) {
+      return '/login'; // 👈 redirect to login if not authenticated
+    }
+
+    if (isLoggedIn && loggingIn) {
+      return '/home'; // 👈 redirect to home if already logged in
+    }
+
+    return null;
+  },
   routes: [
     GoRoute(
       path: '/',
@@ -37,18 +53,13 @@ final GoRouter appRouter = GoRouter(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
     ),
-     GoRoute(
+    GoRoute(
       path: '/signup',
       builder: (context, state) => const AuthScreen(),
     ),
     GoRoute(
       path: '/home',
       builder: (context, state) => const HomeScreen(),
-    ),
- 
-       GoRoute(
-      path: '/add-task',
-      builder: (context, state) => const AddTodoSheet(),
     ),
     GoRoute(
       path: '/calendar',
@@ -68,3 +79,19 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
 );
+
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}

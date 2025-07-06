@@ -26,4 +26,16 @@ class TaskRepository {
       }
     }
   }
+
+  Future<void> deleteTask(String id) async {
+  _box.delete(id);
+  final uid = _auth.currentUser?.uid;
+  if (uid != null) {
+    await _db.collection('users').doc(uid).collection('tasks').doc(id).delete();
+  }
+}
+
+
+
+
 }

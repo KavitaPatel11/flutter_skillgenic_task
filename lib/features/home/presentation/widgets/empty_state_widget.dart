@@ -5,28 +5,16 @@ class EmptyStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-            'assets/images/empty_state.png',
-            height: 180,
-          ),
+          Icon(Icons.inbox, size: 60, color: Colors.grey.shade400),
           const SizedBox(height: 16),
-          // const Text(
-          //   "Hooray!!",
-          //   style: TextStyle(
-          //     fontSize: 22,
-          //     fontWeight: FontWeight.bold,
-          //     color: Color(0xFF2F3B77),
-          //   ),
-          // ),
-          // const SizedBox(height: 8),
-          // const Text(
-          //   "You don’t have any pending task today",
-          //   style: TextStyle(color: Colors.black54),
-          // )
+          const Text(
+            "No tasks available",
+            style: TextStyle(fontSize: 18, color: Colors.grey),
+          ),
         ],
       ),
     );

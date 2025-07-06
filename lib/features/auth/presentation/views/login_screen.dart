@@ -1,21 +1,102 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_task_skillgenic/features/auth/auth_provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  bool rememberMe = false;
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
   bool obscurePassword = true;
+  bool rememberMe = false;
+
+Future<void> login() async {
+  final email = emailController.text.trim();
+  final password = passwordController.text.trim();
+
+  if (email.isEmpty || password.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please enter both email and password')),
+    );
+    return;
+  }
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) {
+      return const Center(
+        child: SizedBox(
+          width: 80,
+          height: 80,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+
+  try {
+    await ref.read(authViewModelProvider.notifier).login(email, password);
+
+    if (context.mounted) {
+     context.pop(); // Close loading dialog
+      
+      /// ✅ Navigation safely after frame is drawn
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          context.go('/home');
+        }
+      });
+    }
+  } catch (e) {
+    if (context.mounted) {
+     context.pop(); // Close loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login failed')),
+      );
+    }
+  }
+}
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+
+    final authState = ref.watch(authViewModelProvider);
+
+    ref.listen(authViewModelProvider, (previous, next) {
+      next.whenOrNull(
+        data: (user) {
+          if (user != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Login successful')),
+            );
+            context.go('/home');
+          }
+        },
+        error: (error, stack) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error.toString())),
+          );
+        },
+      );
+    });
+
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -38,8 +119,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               child: Column(
                 children: [
-               
-                  const Icon(Icons.task_alt, color: Color(0xFFFF6C0A), size: 40),
+                  const Icon(Icons.task_alt,
+                      color: Color(0xFFFF6C0A), size: 40),
                   const SizedBox(height: 8),
                   const Text(
                     "TO-DO",
@@ -84,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             const Text("Don’t have an account? "),
                             TextButton(
                               onPressed: () {
-                                   context.push('/signup');
+                                context.push('/signup');
                               },
                               child: const Text(
                                 "Sign Up",
@@ -104,7 +185,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: TextStyle(fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 6),
-                        const TextField(
+                        TextField(
+                          controller: emailController,
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             hintText: 'Johndoe@gmail.com',
@@ -120,6 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 6),
                         TextField(
+                          controller: passwordController,
                           obscureText: obscurePassword,
                           decoration: InputDecoration(
                             hintText: 'Enter your password',
@@ -157,9 +240,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: const Text(
                                 "Forgot Password ?",
                                 style: TextStyle(
-                                  color: Color(0xFFFF6C0A),
-                                  fontSize: 13
-                                ),
+                                    color: Color(0xFFFF6C0A), fontSize: 13),
                               ),
                             ),
                           ],
@@ -170,9 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(
                           height: 48,
                           child: ElevatedButton(
-                            onPressed: () {
-                               context.go('/home');
-                            },
+                            onPressed: login,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFFF6C0A),
                               shape: RoundedRectangleBorder(
@@ -202,8 +281,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         // Google Login
                         OutlinedButton.icon(
-                          onPressed: () {
-                            context.go('/home');
+                          onPressed: () async {
+                            // final user = await ref
+                            //     .read(authViewModelProvider.notifier)
+                            //     .signInWithGoogle();
+
+                            // if (user != null && context.mounted) {
+                            //   context.go(
+                            //       '/home'); // Navigate to home on successful login
+                            // } else {
+                            //   if (context.mounted) {
+                            //     ScaffoldMessenger.of(context).showSnackBar(
+                            //       const SnackBar(
+                            //           content: Text('Google Sign-In failed')),
+                            //     );
+                            //   }
+                            // }
                           },
                           icon: const FaIcon(FontAwesomeIcons.google, size: 18),
                           label: const Text("Continue with Google"),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class CountryPickerField extends StatelessWidget {
-  const CountryPickerField({super.key});
+    final TextEditingController? controller;
+
+  const CountryPickerField({super.key, this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -11,6 +13,7 @@ class CountryPickerField extends StatelessWidget {
         const Text("Phone Number", style: TextStyle(fontWeight: FontWeight.w500)),
         const SizedBox(height: 6),
         TextFormField(
+          controller: controller,
           keyboardType: TextInputType.phone,
           initialValue: "(+91) 85726-05920",
           decoration: InputDecoration(

@@ -1,76 +1,119 @@
 import 'package:flutter/material.dart';
+
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_task_skillgenic/core/constants/app_colors.dart';
-import '../../notifications_provider.dart';
+import 'package:flutter_task_skillgenic/features/notifications/domain/models/notification_item.dart';
+import 'package:flutter_task_skillgenic/features/notifications/presentation/viewmodels/notifications_viewmodel.dart';
+
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(notificationsViewModelProvider);
+    final notifications = ref.watch(notificationProvider);
+
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Notifications'),
-    
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {},
+       
+        title: const Text(
+          "Notifications",
+        
         ),
+        centerTitle: true,
+        // actions: [
+        //   if (notifications.isNotEmpty)
+        //     IconButton(
+        //       icon: const Icon(Icons.delete_forever, color: Colors.red),
+        //       onPressed: () => ref.read(notificationProvider.notifier).clearAll(),
+        //     ),
+        // ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: const [
-          NotificationTile(
-            icon: Icons.notifications_active,
-            title: 'Reminder',
-            message:
-                'Your interview with Sarah starts in 30 minutes. Get ready!',
-          ),
-          NotificationTile(
-            icon: Icons.schedule,
-            title: 'Upcoming Task',
-            message:
-                "Don't forget to complete Alex Interview before the deadline.",
-          ),
-          NotificationTile(
-            icon: Icons.check_circle,
-            title: 'Task Completed',
-            message: "Great job! You've checked off a task. Keep going!",
-          ),
-          NotificationTile(
-            icon: Icons.warning_amber_rounded,
-            title: 'Task Due',
-            message:
-                "Your task 'Submit Report' is due in 1 hour. Stay on track!",
-          ),
-        ],
-      ),
-   
+      body: notifications.isEmpty
+          ? const Center(child: Text("No notifications"))
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: notifications.length,
+              itemBuilder: (context, index) {
+                final item = notifications[index];
+                return NotificationCard(
+                  item: item,
+                  onDelete: () =>
+                      ref.read(notificationProvider.notifier).remove(item),
+                );
+              },
+            ),
     );
   }
 }
 
-class NotificationTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String message;
+class NotificationCard extends StatelessWidget {
+  final NotificationItem item;
+  final VoidCallback onDelete;
 
-  const NotificationTile({
+  const NotificationCard({
     super.key,
-    required this.icon,
-    required this.title,
-    required this.message,
+    required this.item,
+    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      child: ListTile(
-        leading: Icon(icon, color: AppColors.primary),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(message),
+    return Dismissible(
+      key: ValueKey(item.timestamp.toIso8601String()),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onDelete(),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: Colors.redAccent,
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade300),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade100,
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: '${item.emoji} ',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  TextSpan(
+                    text: item.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              item.message,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
       ),
     );
   }

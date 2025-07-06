@@ -13,6 +13,7 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) => TaskRepository(
 final taskViewModelProvider = ChangeNotifierProvider<TaskViewModel>((ref) {
   return TaskViewModel(ref);
 });
+final searchQueryProvider = StateProvider<String>((ref) => '');
 
 class TaskViewModel extends ChangeNotifier {
   final Ref ref;
@@ -35,6 +36,14 @@ class TaskViewModel extends ChangeNotifier {
 
   Future<void> syncCloud() async {
     await ref.read(taskRepositoryProvider).syncWithCloud();
+    fetchCached();
+  }
+
+    Future<void> updateStatus(String taskId, String newStatus) async {
+    final repository = ref.read(taskRepositoryProvider);
+    final task = tasks.firstWhere((task) => task.id == taskId, orElse: () => throw Exception('Task not found'));
+    final updatedTask = task.copyWith(status: newStatus);
+    await repository.addOrUpdateTask(updatedTask);
     fetchCached();
   }
 }

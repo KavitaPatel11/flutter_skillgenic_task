@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_task_skillgenic/features/home/home_provider.dart';
 import 'package:flutter_task_skillgenic/features/home/presentation/views/main_screen.dart';
 import 'package:flutter_task_skillgenic/features/home/presentation/widgets/custom_bottom_navbar.dart';
+import 'package:flutter_task_skillgenic/features/notifications/data/notification_service.dart';
 
 import '../../../calendar/presentation/views/calendar_screen.dart';
 import '../../../notifications/presentation/views/notifications_screen.dart';
@@ -35,7 +36,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _currentIndex = index;
     });
   }
+@override
+void initState() {
+  super.initState();
+  _requestNotificationPermission();
+}
 
+Future<void> _requestNotificationPermission() async {
+  await NotificationService.requestNotificationPermission();
+}
   @override
   Widget build(BuildContext context) {
     final connection = ref.watch(connectivityProvider); // ✅ Watch connectivity

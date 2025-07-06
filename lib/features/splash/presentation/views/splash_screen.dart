@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,10 +10,15 @@ class SplashScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Trigger navigation after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+   WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(seconds: 2), () {
-        context.go('/onboarding'); // ✅ use go_router route name
+        final isLoggedIn = FirebaseAuth.instance.currentUser != null;
+
+        if (isLoggedIn) {
+          context.go('/home'); // 🔁 Directly go to Home
+        } else {
+          context.go('/onboarding'); // 👈 Go to onboarding if not logged in
+        }
       });
     });
 

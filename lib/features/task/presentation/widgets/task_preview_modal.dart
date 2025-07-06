@@ -9,6 +9,8 @@ void showTaskPreviewModal(
   DateTime? date,
   TimeOfDay? time,
   required String priority,
+  required VoidCallback onSave, // 👈 new
+  bool showSaveButton = true,   // 👈 optional for preview-only usage
 }) {
   showDialog(
     context: context,
@@ -32,26 +34,18 @@ void showTaskPreviewModal(
 
               Row(
                 children: [
-                  const Icon(Icons.assignment_outlined, size: 24),
+                  const Icon(Icons.assignment_outlined),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
+                    child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
-
               const SizedBox(height: 8),
-              Text(
-                description,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
+              Text(description, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
 
               const Divider(height: 30),
 
-              // Priority Row
               Row(
                 children: [
                   const Icon(Icons.flag_outlined),
@@ -65,7 +59,6 @@ void showTaskPreviewModal(
               ),
               const SizedBox(height: 12),
 
-              // Due Date Row
               Row(
                 children: [
                   const Icon(Icons.access_time_outlined),
@@ -80,7 +73,6 @@ void showTaskPreviewModal(
               ),
               const SizedBox(height: 12),
 
-              // Time Row
               Row(
                 children: [
                   const Icon(Icons.schedule_outlined),
@@ -96,43 +88,41 @@ void showTaskPreviewModal(
 
               const SizedBox(height: 24),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.orange,
-                        side: const BorderSide(color: Colors.transparent),
-                        backgroundColor: const Color(0xFFF5F5F5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+              if (showSaveButton)
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.orange,
+                          side: const BorderSide(color: Colors.transparent),
+                          backgroundColor: const Color(0xFFF5F5F5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
+                        child: const Text("Back"),
                       ),
-                      child: const Text("Back"),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Save action
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Task Created")),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context); // Close preview
+                          onSave(); // 👈 Save callback
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
+                        child: const Text("Save"),
                       ),
-                      child: const Text("Save"),
                     ),
-                  ),
-                ],
-              )
+                  ],
+                )
             ],
           ),
         ),

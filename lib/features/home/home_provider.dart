@@ -14,3 +14,8 @@ final connectivityProvider = StreamProvider<ConnectivityResult>((ref) {
       .map((list) => list.first); // ✅ fix here
 });
 
+
+final selectedCategoryProvider = StateProvider<String>((ref) => 'Todo');
+
+
+

@@ -26,12 +26,7 @@ class HomeAppBar extends StatelessWidget {
               style: const TextStyle(fontSize: 14, color: Colors.grey)),
         ],
       ),
-      actions: [
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.more_vert, color: Colors.black),
-        )
-      ],
+     
     );
   }
 }

@@ -1,59 +1,47 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'task.dart';
+part of 'notification_item.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class TaskAdapter extends TypeAdapter<Task> {
+class NotificationItemAdapter extends TypeAdapter<NotificationItem> {
   @override
-  final int typeId = 0;
+  final int typeId = 1;
 
   @override
-  Task read(BinaryReader reader) {
+  NotificationItem read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Task(
+    return NotificationItem(
       id: fields[0] as String,
       title: fields[1] as String,
-      description: fields[2] as String,
-      dueDate: fields[3] as DateTime,
-      priority: fields[4] as String,
+      message: fields[2] as String,
+      timestamp: fields[3] as DateTime,
+      type: fields[4] as String,
       emoji: fields[5] as String,
-      dueTime: fields[6] as String?,
-      createdAt: fields[7] as DateTime?,
-      category: fields[8] as String,
-      status: fields[9] as String,
     );
   }
 
   @override
-  void write(BinaryWriter writer, Task obj) {
+  void write(BinaryWriter writer, NotificationItem obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.title)
       ..writeByte(2)
-      ..write(obj.description)
+      ..write(obj.message)
       ..writeByte(3)
-      ..write(obj.dueDate)
+      ..write(obj.timestamp)
       ..writeByte(4)
-      ..write(obj.priority)
+      ..write(obj.type)
       ..writeByte(5)
-      ..write(obj.emoji)
-      ..writeByte(6)
-      ..write(obj.dueTime)
-      ..writeByte(7)
-      ..write(obj.createdAt)
-      ..writeByte(8)
-      ..write(obj.category)
-      ..writeByte(9)
-      ..write(obj.status);
+      ..write(obj.emoji);
   }
 
   @override
@@ -62,7 +50,7 @@ class TaskAdapter extends TypeAdapter<Task> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is TaskAdapter &&
+      other is NotificationItemAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

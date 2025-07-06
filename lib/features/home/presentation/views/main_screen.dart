@@ -1,25 +1,116 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_task_skillgenic/features/home/home_provider.dart';
+import 'package:flutter_task_skillgenic/features/home/presentation/widgets/task_card.dart';
+import 'package:flutter_task_skillgenic/features/notifications/domain/models/notification_item.dart';
+import 'package:flutter_task_skillgenic/features/notifications/presentation/viewmodels/notifications_viewmodel.dart';
+import 'package:flutter_task_skillgenic/features/task/domain/models/task.dart';
 import 'package:flutter_task_skillgenic/features/task/presentation/viewmodels/task_viewmodel.dart';
-
+import 'package:flutter_task_skillgenic/features/task/presentation/views/add_todo_screen.dart';
+import 'package:flutter_task_skillgenic/features/task/task_provider.dart';
 
 import '../widgets/floating_menu.dart';
 import '../widgets/home_app_bar.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/task_category_filter.dart';
 
-
-
 import '../widgets/empty_state_widget.dart';
 
-class MainScreen extends ConsumerWidget {
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final date = DateTime.now();
-    final taskViewModel = ref.watch(taskViewModelProvider);
-    final tasks = taskViewModel.tasks;
+  ConsumerState<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends ConsumerState<MainScreen> {
+  void _handleEditTask(BuildContext context, Task task) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => AddTodoSheet(
+        task.category,
+        existingTask: task,
+      ),
+    );
+
+    ref.invalidate(taskViewModelProvider);
+  }
+
+ void _handleDeleteTask(
+  BuildContext context,
+  WidgetRef ref,
+  String taskId,
+) async {
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text('Delete Task?'),
+      content: const Text('Are you sure you want to delete this task?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+
+  if (confirm == true) {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Container(
+        height: 80,
+        width: 80,
+        color: Colors.white,
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+    );
+
+    try {
+      await ref.read(taskListProvider.notifier).deleteTask(taskId);
+      ref.invalidate(taskViewModelProvider);
+
+      // Close the loading dialog
+      Navigator.of(context, rootNavigator: true).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Task deleted successfully")),
+      );
+    } catch (e) {
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to delete task: $e")),
+      );
+    }
+  }
+}
+
+
+  @override
+  Widget build(BuildContext context) {
+   final date = DateTime.now();
+  final taskViewModel = ref.watch(taskViewModelProvider);
+  final selectedCategory = ref.watch(selectedCategoryProvider);
+  final searchQuery = ref.watch(searchQueryProvider); // 👈 watch the search query
+
+  final filteredTasks = taskViewModel.tasks
+      .where((task) =>
+          task.category == selectedCategory &&
+          task.title.toLowerCase().contains(searchQuery.toLowerCase()))
+      .toList();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -36,249 +127,125 @@ class MainScreen extends ConsumerWidget {
             const TaskCategoryFilter(),
             const SizedBox(height: 24),
             Expanded(
-              child: tasks.isEmpty
+              child: filteredTasks.isEmpty
                   ? const EmptyStateWidget()
                   : ListView.builder(
-                      itemCount: tasks.length,
+                      itemCount: filteredTasks.length,
                       itemBuilder: (context, index) {
-                        final task = tasks[index];
-                        return _buildTaskCard(
-                          context,
+                        final task = filteredTasks[index];
+                        return TaskCard(
                           title: task.title,
                           description: task.description,
                           priorityLabel: _getPriorityLabel(task.priority),
                           priorityColor: _getPriorityColor(task.priority),
                           priorityIcon: _getPriorityIcon(task.priority),
-                          time: TimeOfDay.fromDateTime(task.dueDate).format(context),
+                          time: TimeOfDay.fromDateTime(task.dueDate)
+                              .format(context),
                           date: _formatDate(task.dueDate),
-                          completed: false, // Add if you have a completed flag
+                          emoji: task.emoji,
+                          completed: true,
+                          status: task.status,
+                          onEdit: () => _handleEditTask(context, task),
+                          onDelete: () =>
+                              _handleDeleteTask(context, ref, task.id),
+                          onStatusChanged: (newStatus) {
+                            ref
+                                .read(taskViewModelProvider.notifier)
+                                .updateStatus(task.id, newStatus);
+                            ref.read(notificationProvider.notifier).add(
+                                  NotificationItem(
+                                    title: "Task Updated",
+                                    message: "${task.title} has been updated.",
+                                    timestamp: DateTime.now(),
+                                    type: 'reminder',
+                                    id: task.id,
+                                    emoji: '🔔',
+                                  ),
+                                );
+                          },
                         );
                       },
                     ),
-            )
+            ),
           ],
         ),
       ),
-      floatingActionButton: const ExpandableFAB(),
+      floatingActionButton: ExpandableFAB(
+        onFabClosed: () {
+          ref.invalidate(taskViewModelProvider);
+          setState(() {});
+        },
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
+}
 
-  Widget _buildTaskCard(
-    BuildContext context, {
-    required String title,
-    required String description,
-    required String priorityLabel,
-    required Color priorityColor,
-    required IconData priorityIcon,
-    required String time,
-    required String date,
-    required bool completed,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: ListTile(
-        leading: Icon(priorityIcon, color: priorityColor),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(description),
-            const SizedBox(height: 4),
-            Text('$date at $time'),
-            Text(priorityLabel, style: TextStyle(color: priorityColor)),
-          ],
-        ),
-        trailing: completed
-            ? const Icon(Icons.check_circle, color: Colors.green)
-            : const Icon(Icons.radio_button_unchecked),
-      ),
-    );
-  }
+String _formatDate(DateTime date) {
+  return '${_getWeekday(date.weekday)}, ${date.day} ${_monthString(date.month)} ${date.year}';
+}
 
-  String _getPriorityLabel(String priority) {
-    switch (priority.toLowerCase()) {
-      case 'high':
-        return 'High Priority';
-      case 'medium':
-        return 'Medium Priority';
-      case 'low':
-        return 'Low Priority';
-      default:
-        return 'Priority';
-    }
-  }
+String _getWeekday(int weekday) {
+  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  return weekdays[weekday - 1];
+}
 
-  Color _getPriorityColor(String priority) {
-    switch (priority.toLowerCase()) {
-      case 'high':
-        return Colors.red;
-      case 'medium':
-        return Colors.orange;
-      case 'low':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
+String _monthString(int month) {
+  const months = [
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+  ];
+  return months[month];
+}
 
-  IconData _getPriorityIcon(String priority) {
-    switch (priority.toLowerCase()) {
-      case 'high':
-        return Icons.warning_amber_rounded;
-      case 'medium':
-        return Icons.hourglass_bottom;
-      case 'low':
-        return Icons.check_circle_outline;
-      default:
-        return Icons.priority_high;
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${_getWeekday(date.weekday)}, ${date.day} ${_monthString(date.month)} ${date.year}';
-  }
-
-  String _getWeekday(int weekday) {
-    const weekdays = [
-      'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
-    ];
-    return weekdays[weekday - 1];
-  }
-
-  String _monthString(int month) {
-    const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return months[month];
+String _getPriorityLabel(String priority) {
+  switch (priority.toLowerCase()) {
+    case 'high':
+      return 'High Priority';
+    case 'medium':
+      return 'Medium Priority';
+    case 'low':
+      return 'Low Priority';
+    default:
+      return 'Priority';
   }
 }
 
-Widget _buildTaskCard(
-  BuildContext context, {
-  required String title,
-  required String description,
-  required String priorityLabel,
-  required Color priorityColor,
-  required IconData priorityIcon,
-  required String time,
-  required String date,
-  required bool completed,
-}) {
-  return Card(
-    color: Colors.white,
-    margin: const EdgeInsets.only(bottom: 16),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    elevation: 2,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: priorityColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.flag, color: Colors.white, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    priorityLabel,
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(priorityIcon, color: Colors.white, size: 16),
-                ],
-              ),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_horiz, color: Colors.white),
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    // handle edit
-                  } else {
-                    // handle delete
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                      value: 'edit',
-                      child: ListTile(
-                          leading: Icon(Icons.edit), title: Text('Edit'))),
-                  const PopupMenuItem(
-                      value: 'delete',
-                      child: ListTile(
-                          leading: Icon(Icons.delete, color: Colors.red),
-                          title: Text('Delete'))),
-                ],
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    completed
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_unchecked,
-                    color: priorityColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                  ),
-                  if (completed)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        "Completed",
-                        style: TextStyle(color: Colors.white, fontSize: 12),
-                      ),
-                    )
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                description,
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-              const Divider(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.access_time, size: 16),
-                      const SizedBox(width: 4),
-                      Text(time),
-                    ],
-                  ),
-                  Text(date, style: const TextStyle(color: Colors.grey))
-                ],
-              )
-            ],
-          ),
-        )
-      ],
-    ),
-  );
+Color _getPriorityColor(String priority) {
+  switch (priority.toLowerCase()) {
+    case 'high':
+      return Colors.red;
+    case 'medium':
+      return Colors.orange;
+    case 'low':
+      return Colors.green;
+    default:
+      return Colors.grey;
+  }
 }
+
+IconData _getPriorityIcon(String priority) {
+  switch (priority.toLowerCase()) {
+    case 'high':
+      return Icons.warning_amber_rounded;
+    case 'medium':
+      return Icons.hourglass_bottom;
+    case 'low':
+      return Icons.check_circle_outline;
+    default:
+      return Icons.priority_high;
+  }
+}
+
+

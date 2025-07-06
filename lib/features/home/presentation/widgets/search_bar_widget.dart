@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 
-class SearchBarWidget extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_task_skillgenic/features/home/home_provider.dart';
+import 'package:flutter_task_skillgenic/features/task/presentation/viewmodels/task_viewmodel.dart';
+
+class SearchBarWidget extends ConsumerWidget {
   const SearchBarWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return TextField(
+      onChanged: (query) {
+        ref.read(searchQueryProvider.notifier).state = query;
+      },
       decoration: InputDecoration(
         hintText: "Search Task",
         prefixIcon: const Icon(Icons.search),
